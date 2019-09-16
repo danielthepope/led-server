@@ -1,0 +1,2 @@
+adafruit-circuitpython-neopixel==3.3.7
+Flask==1.1.1
