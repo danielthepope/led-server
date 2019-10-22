@@ -1,5 +1,6 @@
-import led
+from led_server import led
 from flask import Flask, jsonify, request, abort
+import logging as log
 
 app = Flask(__name__)
 
@@ -22,10 +23,10 @@ def put_leds():
     if not request.json or type(request.json) is not dict:
         abort(400)
     output = {}
-    print(request.json)
+    log.debug(request.json)
     for key in request.json.keys():
         led_id = int(key)
-        print('setting led %s to %s' % (key, request.json[key]))
+        log.info('setting led %s to %s' % (key, request.json[key]))
         output[led_id] = set_led(led_id, request.json[key])
     return output
 
@@ -51,10 +52,10 @@ if __name__ == '__main__':
     try:
         led.start()
         app.run()
-        print('exiting (end)')
+        log.info('exiting (end)')
         led.all_off()
         exit()
     except:
-        print('exiting (exception)')
+        log.info('exiting (exception)')
         led.all_off()
         exit()

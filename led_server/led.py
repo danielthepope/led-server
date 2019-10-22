@@ -1,24 +1,29 @@
-import board
-import neopixel
-from time import sleep, time
+try:
+    import board
+    import neopixel
+    board_imported = True
+except NotImplementedError:
+    board_imported = False
+
+import logging as log
 import threading
-from noise import pnoise1
 from random import choice
+from time import sleep, time
 
-PIXEL_COUNT = 50
-FRAMES_PER_SECOND = 25
+from noise import pnoise1
 
-pixels = neopixel.NeoPixel(board.D18, PIXEL_COUNT, auto_write=False, pixel_order=neopixel.RGB, brightness=0.1)
+from led_server.config import FRAMES_PER_SECOND, PIXEL_COUNT
+from led_server.models import _MockPixels, LedCollection
+
+
+if board_imported:
+    pixels = neopixel.NeoPixel(board.D18, PIXEL_COUNT, auto_write=False, pixel_order=neopixel.RGB, brightness=0.1)
+else:
+    pixels = _MockPixels(PIXEL_COUNT)
 continue_pattern = True
 
-model = []
-for i in range(PIXEL_COUNT):
-    model.append({
-        'colours': [(0, 0, 0)],
-        'offset': 0,
-        'duration': 20,
-        'modifier': None
-    })
+
+model = LedCollection(PIXEL_COUNT)
 
 
 def set_pixel(index, colours, offset=0, duration=1, modifier=None, repeat=0):
@@ -26,19 +31,15 @@ def set_pixel(index, colours, offset=0, duration=1, modifier=None, repeat=0):
     if repeat:
         for i in range(PIXEL_COUNT):
             if i % repeat == 0 and i + index < PIXEL_COUNT:
-                model[i + index] = {
-                    'colours': colours,
-                    'offset': offset,
-                    'duration': duration,
-                    'modifier': modifier
-                }
+                model[i + index].colours = colours
+                model[i + index].offset = offset
+                model[i + index].duration = duration
+                model[i + index].modifier = modifier
     else:
-        model[index] = {
-            'colours': colours,
-            'offset': offset,
-            'duration': duration,
-            'modifier': modifier
-        }
+        model[index].colours = colours
+        model[index].offset = offset
+        model[index].duration = duration
+        model[index].modifier = modifier
 
 
 def lerp_colour(from_colour, to_colour, proportion):
@@ -64,10 +65,10 @@ def lerp_colours(colours, proportion, back_to_start=False):
 
 
 def colour_for_pixel(pixel_number, sequence_number):
-    modifier = model[pixel_number]['modifier']
-    colours = model[pixel_number]['colours']
-    duration = model[pixel_number]['duration']
-    offset = model[pixel_number]['offset']
+    modifier = model[pixel_number].modifier
+    colours = model[pixel_number].colours
+    duration = model[pixel_number].duration
+    offset = model[pixel_number].offset
     proportion = ((sequence_number / (FRAMES_PER_SECOND * duration)) + offset) % 1
     if modifier == 'noise':
         noise_factor = (sequence_number / (FRAMES_PER_SECOND * duration)) + offset
@@ -98,7 +99,7 @@ def all_off():
 
 
 def run_sequence():
-    print('Begin LED sequence')
+    log.info('Begin LED sequence')
     sequence_number = 0
     start_time = time()
     while continue_pattern:
@@ -110,7 +111,7 @@ def run_sequence():
         sleep(max((1/FRAMES_PER_SECOND) - (time() - start_time), 0))
         start_time = time()
         sequence_number += 1
-    print('discontinuing')
+    log.info('discontinuing')
     all_off()
 
 
@@ -120,7 +121,7 @@ def start():
 
 
 if __name__ == '__main__':
-    print('running from led.py')
+    log.info('running from led.py')
     # for i in range(6):
     #     set_pixel(i,
     #               [(255, 0, 0), (255, 255, 0), (0, 255, 0), (0, 255, 255), (0, 0, 255), (255, 0, 255)],
@@ -147,7 +148,7 @@ if __name__ == '__main__':
         while True:
             sleep(1)
     except KeyboardInterrupt:
-        print('closing')
+        log.info('closing')
         continue_pattern = False
         all_off()
         exit()

@@ -1,1 +1,2 @@
-sudo venv/bin/python led.py
+#!/usr/bin/env bash
+sudo venv/bin/python led_server/led.py
