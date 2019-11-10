@@ -7,7 +7,7 @@ except NotImplementedError:
 
 import logging as log
 import threading
-from random import choice
+from random import choice, random
 from time import sleep, time
 
 from noise import pnoise1
@@ -70,18 +70,29 @@ def colour_for_pixel(pixel_number, sequence_number):
     duration = model[pixel_number].duration
     offset = model[pixel_number].offset
     proportion = ((sequence_number / (FRAMES_PER_SECOND * duration)) + offset) % 1
+    start_of_period = int(
+        (
+            sequence_number
+            + (FRAMES_PER_SECOND * duration)
+            - (offset * FRAMES_PER_SECOND * duration)
+        ) % (FRAMES_PER_SECOND * duration)) == 0
     if modifier == 'noise':
         noise_factor = (sequence_number / (FRAMES_PER_SECOND * duration)) + offset
         return lerp_colours(colours, (pnoise1(noise_factor) + 1) / 2)
     elif modifier == 'smooth':
         return lerp_colours(colours, proportion, back_to_start=True)
     elif modifier == 'random':
-        if proportion < 0.99/FRAMES_PER_SECOND:  # 0.99 seems wrong
+        if start_of_period:
             return choice(colours)
         else:
             return None  # Use previous colour
     elif modifier == 'blink':
-        if proportion < 0.99/FRAMES_PER_SECOND:
+        if start_of_period:
+            return choice(colours[1:] or [(255, 255, 255)])
+        else:
+            return colours[0]
+    elif modifier == 'sparkle':
+        if random() < duration:
             return choice(colours[1:] or [(255, 255, 255)])
         else:
             return colours[0]
