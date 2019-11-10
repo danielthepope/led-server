@@ -19,7 +19,7 @@ python3 -m venv venv
 That will create a folder called `venv`. You can install requirements to this directory using
 
 ```bash
-./venv/bin/pip install -r requirements.txt
+./venv/bin/pip install -e .
 ```
 
 ### Hardware
@@ -38,6 +38,16 @@ There are two helper scripts that you can run, `run-pixels` and `run-server`.
 
 ```bash
 curl -XPUT -d '{"1":{"colours":[[255,0,255],[255,255,0]],"duration":2,"offset":0}, "2":{"colours":[[0,0,255],[0,255,255]],"modifier":"smooth"}}' -H 'Content-Type: application/json' localhost:5000/leds
+```
+
+### Run tests
+
+Tests are run with Python's UnitTest
+
+Within your virtualenv:
+
+```
+python -m unittest
 ```
 
 ## Data model
