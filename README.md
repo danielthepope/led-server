@@ -30,7 +30,9 @@ Using jumper wires, I connected the white wire to the ground pin of the Raspberr
 
 ### Run the code
 
-There are two helper scripts that you can run, `run-pixels` and `run-server`.
+Within your virtual environment, you can run `python led_server/led.py`. If you're running on something that isn't a Raspberry Pi, you might well see a simulation of the LEDs pop up on your screen.
+
+Alternatively there are two helper scripts that you can run, `run-pixels` and `run-server`.
 
 `run-pixels` just checks that you've got the LEDs set up correctly. It should turn on all the LEDs and make them show some random colours.
 
@@ -92,6 +94,10 @@ By not specifying a modifier (or by naming a modifier that isn't recognised), th
 }
 ```
 
+![none.gif](readme/none.gif)
+
+_Each of the LEDs in this simulation has an `offset` value increasing by 0.2 each time._
+
 The `duration` field specifies the amount of time, in seconds, it will take to cycle through the colours. In this case, a duration of 3 and specifying 3 colours will switch colour once a second. The LED will initialise on red, then go orange, yellow and back to red.
 
 `offset` pushes the sequence back by a percentage. It can be a decimal between 0 and 1. If it is 0.333 it will start at orange.
@@ -110,6 +116,10 @@ Say we have the following LED:
     "modifer": "noise"
 }
 ```
+
+![noise.gif](readme/noise.gif)
+
+_Each of the LEDs in this simulation has an `offset` value increasing by 0.2 each time._
 
 Its colour values are black, red and yellow. This modifier's "home" colour is the midpoint of the colours. In this case it's red. In cases where there is an even number of colours specified, it will blend the two middle colours together.
 
@@ -134,6 +144,10 @@ For the best effect, make sure to use a high frame rate (say 20 or above) when u
 }
 ```
 
+![smooth.gif](readme/smooth.gif)
+
+_Each of the LEDs in this simulation has an `offset` value increasing by 0.2 each time._
+
 This will cycle through the colours of the rainbow, starting at red and fading gradually into orange, yellow etc. When it gets to magenta, it will fade back into red and repeat. The `duration` field is the number of seconds to go through a whole cycle. `offset` can be any decimal between 0 and 1, and will indicate how far through the colour sequence the LEDs will start at. An `offset` of 0.5 will start the sequence at cyan.
 
 For the best effect, make sure to use a high frame rate (say 20 or above) when using this modifier. This will keep the colour transitions looking smooth.
@@ -151,7 +165,11 @@ At the start of each period, `random` will choose a colour to flick to.
 }
 ```
 
-In this case, every two seconds (as specified by the `duration` field), it will pick a random colour to switch to, out of yellow, cyan, magenta and white. The `offset` field can be a decimal between 0 and 1, and indicates which part of thte period the next colour should be picked.
+![random.gif](readme/random.gif)
+
+_Each of the LEDs in this simulation has an `offset` value increasing by 0.2 each time._
+
+In this case, every two seconds (as specified by the `duration` field), it will pick a random colour to switch to, out of yellow, cyan, magenta and white. The `offset` field can be a decimal between 0 and 1, and indicates which part of the period the next colour should be picked.
 
 #### Blink
 
@@ -165,6 +183,10 @@ At the start of each period, `blink` will become another colour just for one fra
     "modifer": "blink"
 }
 ```
+
+![blink.gif](readme/blink.gif)
+
+_Each of the LEDs in this simulation has an `offset` value increasing by 0.2 each time._
 
 This example will keep the LED blue, but briefly flash it green once per second. If we set the frame rate to 10 per second, this LED will be blue for 0.9 seconds, then green for 0.1. If you do not specify a second colour, the blinking colour will be white.
 
@@ -182,4 +204,8 @@ This example will keep the LED blue, but briefly flash it green once per second.
 }
 ```
 
-In this example, every frame has a 1/10 chance that the LED will be white, otherwise it'll be blue.
+In the above example, every frame has a 1/10 chance that the LED will be white, otherwise it'll be blue.
+
+![sparkle.gif](readme/sparkle.gif)
+
+_Each of the LEDs in this simulation has an `offset` value increasing by 0.2 each time, starting at 0. Notice how an increasing offset increases the likelihood of the light being white._

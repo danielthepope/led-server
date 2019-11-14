@@ -92,7 +92,7 @@ def colour_for_pixel(pixel_number, sequence_number):
         else:
             return colours[0]
     elif modifier == 'sparkle':
-        if random() < duration:
+        if random() < offset:
             return choice(colours[1:] or [(255, 255, 255)])
         else:
             return colours[0]
@@ -133,12 +133,6 @@ def start():
 
 if __name__ == '__main__':
     log.info('running from led.py')
-    # for i in range(6):
-    #     set_pixel(i,
-    #               [(255, 0, 0), (255, 255, 0), (0, 255, 0), (0, 255, 255), (0, 0, 255), (255, 0, 255)],
-    #               repeat=7,
-    #               offset=i*20,
-    #               modifier='crossfade')
 
     for i in range(PIXEL_COUNT):
         set_pixel(i,
@@ -146,14 +140,7 @@ if __name__ == '__main__':
                   duration=1,
                   modifier='noise',
                   offset=i*1.4)
-    # set_pixel(2, [(255, 0, 0), (255, 255, 0), (0, 255, 0), (0, 255, 255)], modifier='smooth')
 
-    # set_pixel(2, [(0, 255, 0)], repeat=5)
-    # set_pixel(3, [(0, 0, 255)], repeat=5)
-    # set_pixel(4, [(255, 0, 255)], repeat=5)
-    # for i in range(25):
-    #     set_pixel(i*2, [(255, 0, 0)], offset=i*2, modifier='noise')
-    #     set_pixel(i*2+1, [(0, 120, 120), (0, 0, 255)], offset=i*2, modifier='noise')
     start()
     try:
         while True:

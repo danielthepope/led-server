@@ -1,13 +1,42 @@
 import logging as log
+import os
+import threading
+import tkinter
+
+from led_server import config
+
+
+def rgb2hex(r, g, b):
+    return '#%02x%02x%02x' % (r, g, b)
 
 
 class _MockPixels(list):
-    def __init__(self, pixel_count):
+    def __init__(self, pixel_count, led_size=config.LED_SIZE):
         super()
         self += [(0, 0, 0)] * pixel_count
+        self.pixel_count = pixel_count
+        self.led_size = led_size
+        thread = threading.Thread(target=self.do_window)
+        thread.start()
+
+    def do_window(self):
+        self.window = tkinter.Tk()
+        self.window.title('LED Simulator')
+        self.canvas = tkinter.Canvas(self.window, width=self.pixel_count * self.led_size, height=self.led_size, bg='#222222')
+        self.canvas.pack()
+        self.circles = []
+        for i in range(self.pixel_count):
+            self.circles.append(self.canvas.create_oval(i*self.led_size, 0, (i+1)
+                                                        * self.led_size, self.led_size, fill='#000000'))
+        self.window.mainloop()
+        os._exit(0)
 
     def show(self):
-        log.debug(repr(self))
+        if hasattr(self, 'canvas'):
+            for i, pixel in enumerate(self):
+                self.canvas.itemconfig(self.circles[i], fill=rgb2hex(pixel[0], pixel[1], pixel[2]))
+        else:
+            log.debug(repr(self))
 
 
 class Led(dict):
