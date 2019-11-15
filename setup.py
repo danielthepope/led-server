@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='led-server',
-    version='0.0.1',
+    version='0.0.2',
     packages=['led_server'],
     install_requires=[
         'adafruit-circuitpython-neopixel==3.3.7',
