@@ -1,7 +1,6 @@
 import logging as log
 import os
 import threading
-import tkinter
 
 from led_server import config
 
@@ -20,6 +19,7 @@ class _MockPixels(list):
         thread.start()
 
     def do_window(self):
+        import tkinter
         self.window = tkinter.Tk()
         self.window.title('LED Simulator')
         self.canvas = tkinter.Canvas(self.window, width=self.pixel_count * self.led_size, height=self.led_size, bg='#222222')
