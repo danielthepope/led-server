@@ -1,13 +1,17 @@
-from led_server import led
+from led_server.config import HOST, PORT
+from led_server.led import LocalLeds
 from flask import Flask, jsonify, request, abort
 import logging as log
+from werkzeug.serving import WSGIRequestHandler
+
 
 app = Flask(__name__)
+led = LocalLeds()
 
 
-@app.route('/hello')
-def hello():
-    return 'Hello world'
+@app.route('/status')
+def status():
+    return jsonify({'pixel_count': led.pixel_count})
 
 
 @app.route('/leds', methods=['GET'])
@@ -48,14 +52,17 @@ def set_led(led_id, data):
     return led.model[led_id]
 
 
-if __name__ == '__main__':
+def run():
     try:
+        WSGIRequestHandler.protocol_version = "HTTP/1.1"
         led.start()
-        app.run()
+        app.run(host=HOST, port=PORT)
         log.info('exiting (end)')
-        led.all_off()
-        exit()
     except:
         log.info('exiting (exception)')
-        led.all_off()
-        exit()
+    led.all_off()
+    exit()
+
+
+if __name__ == '__main__':
+    run()

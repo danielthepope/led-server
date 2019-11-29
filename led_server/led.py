@@ -1,45 +1,20 @@
-try:
-    import board
-    import neopixel
-    board_imported = True
-except NotImplementedError:
-    board_imported = False
-
 import logging as log
 import threading
 from random import choice, random
 from time import sleep, time
 
 from noise import pnoise1
+import requests
 
-from led_server.config import FRAMES_PER_SECOND, PIXEL_COUNT
+from led_server.config import BRIGHTNESS, FRAMES_PER_SECOND, PIXEL_COUNT
 from led_server.models import _MockPixels, LedCollection
 
-
-if board_imported:
-    pixels = neopixel.NeoPixel(board.D18, PIXEL_COUNT, auto_write=False, pixel_order=neopixel.RGB, brightness=0.1)
-else:
-    pixels = _MockPixels(PIXEL_COUNT)
-continue_pattern = True
-
-
-model = LedCollection(PIXEL_COUNT)
-
-
-def set_pixel(index, colours, offset=0, duration=1, modifier=None, repeat=0):
-    # Colours should be an array of 3-tuples.
-    if repeat:
-        for i in range(PIXEL_COUNT):
-            if i % repeat == 0 and i + index < PIXEL_COUNT:
-                model[i + index].colours = colours
-                model[i + index].offset = offset
-                model[i + index].duration = duration
-                model[i + index].modifier = modifier
-    else:
-        model[index].colours = colours
-        model[index].offset = offset
-        model[index].duration = duration
-        model[index].modifier = modifier
+try:
+    import board
+    import neopixel
+    board_imported = True
+except NotImplementedError:
+    board_imported = False
 
 
 def lerp_colour(from_colour, to_colour, proportion):
@@ -60,15 +35,14 @@ def lerp_colours(colours, proportion, back_to_start=False):
     splits = len(points) - 1
     section = int(proportion * splits)
     proportion_in_section = (proportion * splits) % 1
-    # print('points %s, splits %s, section %s, proportion_in_section %s' % (points, splits, section, proportion_in_section))
     return lerp_colour(points[section], points[section+1], proportion_in_section)
 
 
-def colour_for_pixel(pixel_number, sequence_number):
-    modifier = model[pixel_number].modifier
-    colours = model[pixel_number].colours
-    duration = model[pixel_number].duration
-    offset = model[pixel_number].offset
+def colour_for_pixel(pixel, sequence_number):
+    modifier = pixel.modifier
+    colours = pixel.colours
+    duration = pixel.duration
+    offset = pixel.offset
     proportion = ((sequence_number / (FRAMES_PER_SECOND * duration)) + offset) % 1
     start_of_period = int(
         (
@@ -101,52 +75,136 @@ def colour_for_pixel(pixel_number, sequence_number):
         return colours[colour_index]
 
 
-def all_off():
-    global continue_pattern
-    continue_pattern = False
-    for i in range(PIXEL_COUNT):
-        pixels[i] = (0, 0, 0)
-    pixels.show()
+class LedFactory:
+    def create(self, endpoint=None):
+        if endpoint:
+            return RemoteLeds(endpoint)
+        else:
+            return LocalLeds()
 
 
-def run_sequence():
-    log.info('Begin LED sequence')
-    sequence_number = 0
-    start_time = time()
-    while continue_pattern:
-        for i in range(PIXEL_COUNT):
-            new_colour = colour_for_pixel(i, sequence_number)
-            if new_colour:
-                pixels[i] = new_colour
-        pixels.show()
-        sleep(max((1/FRAMES_PER_SECOND) - (time() - start_time), 0))
+class LedInterface:
+    def __init__(self):
+        self.pixel_count = None
+
+    def set_pixel(self, index, colours, offset, duration, modifier, repeat):
+        raise NotImplementedError('Not implemented')
+
+    def all_off(self):
+        raise NotImplementedError('Not implemented')
+
+
+class LocalLeds(LedInterface):
+    def __init__(self):
+        super().__init__()
+        self.continue_pattern = True
+        if board_imported:
+            self.pixels = neopixel.NeoPixel(board.D18,
+                                            PIXEL_COUNT,
+                                            auto_write=False,
+                                            pixel_order=neopixel.RGB,
+                                            brightness=BRIGHTNESS)
+        else:
+            self.pixels = _MockPixels(PIXEL_COUNT)
+
+        self.model = LedCollection(PIXEL_COUNT)
+        self.pixel_count = PIXEL_COUNT
+        # self._start()
+
+    def set_pixel(self, index, colours, offset=0, duration=1, modifier=None, repeat=0):
+        # Colours should be an array of 3-tuples.
+        if repeat:
+            for i in range(self.pixel_count):
+                if i % repeat == 0 and i + index < self.pixel_count:
+                    self.model[i + index].colours = colours
+                    self.model[i + index].offset = offset
+                    self.model[i + index].duration = duration
+                    self.model[i + index].modifier = modifier
+        else:
+            self.model[index].colours = colours
+            self.model[index].offset = offset
+            self.model[index].duration = duration
+            self.model[index].modifier = modifier
+
+    def all_off(self):
+        self.continue_pattern = False
+        for i in range(self.pixel_count):
+            self.pixels[i] = (0, 0, 0)
+
+    def _run_sequence(self):
+        log.info('Begin LED sequence')
+        sequence_number = 0
         start_time = time()
-        sequence_number += 1
-    log.info('discontinuing')
-    all_off()
+        while self.continue_pattern:
+            for i in range(self.pixel_count):
+                new_colour = colour_for_pixel(self.model[i], sequence_number)
+                if new_colour:
+                    self.pixels[i] = new_colour
+            self.pixels.show()
+            sleep(max((1/FRAMES_PER_SECOND) - (time() - start_time), 0))
+            start_time = time()
+            sequence_number += 1
+        log.info('stopping')
+        self.all_off()
+
+    def start(self):
+        thread = threading.Thread(target=self._run_sequence)
+        thread.start()
 
 
-def start():
-    thread = threading.Thread(target=run_sequence)
-    thread.start()
+class RemoteLeds(LedInterface):
+    def __init__(self, base_url):
+        super().__init__()
+        self.base_url = base_url
+        self.session = requests.Session()
+
+        url = '%s/status' % self.base_url
+        try:
+            response = self.session.get(url, timeout=5)
+            if not(response.ok):
+                self._connection_failed('%s calling %s' % (response.status_code, url))
+            self.pixel_count = response.json()['pixel_count']
+            log.info('Setting pixel count to %s', self.pixel_count)
+        except Exception as e:
+            self._connection_failed(e)
+
+    def _connection_failed(self, exception=None):
+        log.warning('Failed to connect to LEDs at %s: %s', self.base_url, exception)
+        log.warning('Setting default pixel count of %s', PIXEL_COUNT)
+        self.pixel_count = PIXEL_COUNT
+
+    def set_pixel(self, index, colours, offset=0, duration=1, modifier=None, repeat=0):
+        data = {}
+        if repeat:
+            url = '%s/leds' % self.base_url
+            for i in range(self.pixel_count):
+                if (i + index) % repeat == 0:
+                    data[str(i)] = {
+                        'colours': colours,
+                        'offset': offset,
+                        'duration': duration,
+                        'modifier': modifier or 'none'
+                    }
+        else:
+            url = '%s/leds/%s' % (self.base_url, index)
+            data = {
+                'colours': colours,
+                'offset': offset,
+                'duration': duration,
+                'modifier': modifier or 'none'
+            }
+        self.session.put(url, json=data)
+
+    def all_off(self):
+        url = '%s/leds/off' % self.base_url
+        self.session.put(url)
 
 
 if __name__ == '__main__':
-    log.info('running from led.py')
-
-    for i in range(PIXEL_COUNT):
-        set_pixel(i,
-                  [(0, 255, 0), (255, 0, 0), (0, 0, 255)],
-                  duration=1,
-                  modifier='noise',
-                  offset=i*1.4)
-
-    start()
-    try:
-        while True:
-            sleep(1)
-    except KeyboardInterrupt:
-        log.info('closing')
-        continue_pattern = False
-        all_off()
-        exit()
+    led = LedFactory().create()
+    for i in range(led.pixel_count):
+        led.set_pixel(i,
+                      [(0, 255, 0), (255, 0, 0), (0, 0, 255)],
+                      duration=1,
+                      modifier='noise',
+                      offset=i*1.4)

@@ -28,6 +28,26 @@ I bought [this set](https://www.amazon.co.uk/gp/product/B07QYW5X78/) of 50 WS281
 
 Using jumper wires, I connected the white wire to the ground pin of the Raspberry Pi (Pin 6), the red wire to the +5v pin (Pin 4) and the green wire to BCM 18 (or Pin 12), using the reference on [pinout.xyz](https://pinout.xyz)
 
+### Configuration
+
+Configuration is done by setting environment variables. This program also supports the `.env` file so you can store and reuse your configuration easily. Make a file called `.env` and put it in the root directory of this project. Here's an example with all the options:
+
+```
+BRIGHTNESS = 0.1
+FRAMES_PER_SECOND = 10
+HOST = 127.0.0.1
+PIXEL_COUNT = 20
+LED_SIZE = 50
+PORT = 5000
+```
+
+- `BRIGHTNESS`: Between 0 and 1, sets the initial brightness value of the LEDs
+- `FRAMES_PER_SECOND`: Number of times the LED colours can be updated in a second. A larger number results in smoother colour transitions, but also more CPU usage.
+- `HOST`: When running in server mode, this sets what IP address to bind to. By default it is `127.0.0.1` but if you are having trouble connecting remotely, try setting it to `0.0.0.0` instead.
+- `PIXEL_COUNT`: Number of LEDs to control.
+- `LED_SIZE`: Only used when simulating the LEDs e.g. when running on a laptop instead of a Raspberry Pi. This controls the size of the circles in the display.
+- `PORT`: When running in server mode, this sets what port number to bind to.
+
 ### Run the code
 
 Within your virtual environment, you can run `python led_server/led.py`. If you're running on something that isn't a Raspberry Pi, you might well see a simulation of the LEDs pop up on your screen.
@@ -50,6 +70,23 @@ Within your virtualenv:
 
 ```
 python -m unittest
+```
+
+## Usage
+
+Usage is very similar whether your code is running on the same device running the LEDs, or if the LEDs are remote. If remote, you'll need to provide the address and port of the remote LEDs.
+
+```python
+from led_server.led import LedFactory
+
+# LEDs are on the same device
+leds = LedFactory.create()
+
+# LEDs are on a remote device
+leds = LedFactory.create('http://129.168.0.15:5000')
+
+# Set the first pixel in the chain to yellow
+leds.set_pixel(0, [(255, 255, 0)])
 ```
 
 ## Data model
