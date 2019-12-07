@@ -38,6 +38,9 @@ class _MockPixels(list):
         else:
             log.debug(repr(self))
 
+    def brightness(self, b):
+        log.info('Setting brightness to %s (but not really)', b)
+
 
 class Led(dict):
     _id = None

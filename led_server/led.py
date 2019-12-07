@@ -26,7 +26,6 @@ def lerp_colour(from_colour, to_colour, proportion):
 
 
 def lerp_colours(colours, proportion, back_to_start=False):
-    # print(colours)
     if len(colours) < 2:
         return 0
     points = colours[::]
@@ -93,6 +92,15 @@ class LedInterface:
     def all_off(self):
         raise NotImplementedError('Not implemented')
 
+    def all_on(self):
+        raise NotImplementedError('Not implemented')
+
+    def brightness(self, b):
+        raise NotImplementedError('Not implemented')
+
+    def start(self):
+        pass
+
 
 class LocalLeds(LedInterface):
     def __init__(self):
@@ -109,17 +117,16 @@ class LocalLeds(LedInterface):
 
         self.model = LedCollection(PIXEL_COUNT)
         self.pixel_count = PIXEL_COUNT
-        # self._start()
 
     def set_pixel(self, index, colours, offset=0, duration=1, modifier=None, repeat=0):
         # Colours should be an array of 3-tuples.
         if repeat:
             for i in range(self.pixel_count):
-                if i % repeat == 0 and i + index < self.pixel_count:
-                    self.model[i + index].colours = colours
-                    self.model[i + index].offset = offset
-                    self.model[i + index].duration = duration
-                    self.model[i + index].modifier = modifier
+                if (i - index) % repeat == 0:
+                    self.model[i].colours = colours
+                    self.model[i].offset = offset
+                    self.model[i].duration = duration
+                    self.model[i].modifier = modifier
         else:
             self.model[index].colours = colours
             self.model[index].offset = offset
@@ -127,9 +134,22 @@ class LocalLeds(LedInterface):
             self.model[index].modifier = modifier
 
     def all_off(self):
-        self.continue_pattern = False
         for i in range(self.pixel_count):
-            self.pixels[i] = (0, 0, 0)
+            self.model[i].colours = [(0, 0, 0)]
+            self.model[i].offset = 0
+            self.model[i].duration = 1
+            self.model[i].modifier = 'none'
+        self.continue_pattern = False
+
+    def all_on(self):
+        for i in range(self.pixel_count):
+            self.model[i].colours = [(255, 255, 255)]
+            self.model[i].offset = 0
+            self.model[i].duration = 1
+            self.model[i].modifier = 'none'
+
+    def brightness(self, b):
+        self.pixels.brightness = b
 
     def _run_sequence(self):
         log.info('Begin LED sequence')
@@ -178,7 +198,7 @@ class RemoteLeds(LedInterface):
         if repeat:
             url = '%s/leds' % self.base_url
             for i in range(self.pixel_count):
-                if (i + index) % repeat == 0:
+                if (i - index) % repeat == 0:
                     data[str(i)] = {
                         'colours': colours,
                         'offset': offset,
@@ -198,6 +218,17 @@ class RemoteLeds(LedInterface):
     def all_off(self):
         url = '%s/leds/off' % self.base_url
         self.session.put(url)
+
+    def all_on(self):
+        url = '%s/leds/on' % self.base_url
+        self.session.put(url)
+
+    def brightness(self, b):
+        url = '%s/brightness' % self.base_url
+        data = {
+            'brightness': b
+        }
+        self.session.put(url, json=data)
 
 
 if __name__ == '__main__':

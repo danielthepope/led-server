@@ -45,6 +45,21 @@ def put_led(led_id):
 @app.route('/leds/off', methods=['GET', 'PUT', 'POST'])
 def leds_off():
     led.all_off()
+    return 'ok'
+
+
+@app.route('/leds/on', methods=['GET', 'PUT', 'POST'])
+def leds_on():
+    led.all_on()
+    return 'ok'
+
+
+@app.route('/brightness', methods=['PUT', 'POST'])
+def brightness():
+    if not request.json or 'brightness' not in request.json:
+        abort(400)
+    led.brightness(float(request.json['brightness']))
+    return 'ok'
 
 
 def set_led(led_id, data):
