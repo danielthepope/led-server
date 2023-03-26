@@ -77,8 +77,10 @@ def colour_for_pixel(pixel, sequence_number):
 class LedFactory:
     def create(self, endpoint=None):
         if endpoint:
+            log.info(f'Creating remote LEDs at {endpoint}')
             return RemoteLeds(endpoint)
         else:
+            log.info('Creating local LEDs')
             return LocalLeds()
 
 
@@ -233,6 +235,7 @@ class RemoteLeds(LedInterface):
 
 if __name__ == '__main__':
     led = LedFactory().create()
+    led.start()
     for i in range(led.pixel_count):
         led.set_pixel(i,
                       [(0, 255, 0), (255, 0, 0), (0, 0, 255)],
