@@ -80,10 +80,10 @@ Usage is very similar whether your code is running on the same device running th
 from led_server.led import LedFactory
 
 # LEDs are on the same device
-leds = LedFactory.create()
+leds = LedFactory().create()
 
 # LEDs are on a remote device
-leds = LedFactory.create('http://129.168.0.15:5000')
+leds = LedFactory().create('http://192.168.0.15:5000')
 
 # Set the first pixel in the chain to yellow
 leds.set_pixel(0, [(255, 255, 0)])
