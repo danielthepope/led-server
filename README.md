@@ -8,6 +8,8 @@ It's a bit very hacky at the moment.
 
 ### Dependencies
 
+I've only tried this using Python 3.7 because that's the one that runs on my Raspberry Pi.
+
 It's recommended to set up a virtual environment on your Pi so that any dependencies you install don't conflict with any others you've installed in the past.
 
 Setting up a virtual environment can be done in Python 3 like this.
@@ -22,11 +24,19 @@ That will create a folder called `venv`. You can install requirements to this di
 ./venv/bin/pip install -e .
 ```
 
+To run on a Raspberry Pi using the GPIO pins, you must also run
+```bash
+./venv/bin/pip install adafruit-circuitpython-neopixel
+./venv/bin/pip install RPi.GPIO
+./venv/bin/pip install rpi-ws281x
+./venv/bin/pip install sysv-ipc
+```
+
 ### Hardware
 
 I bought [this set](https://www.amazon.co.uk/gp/product/B07QYW5X78/) of 50 WS2811 LEDs. They're pretty neat.
 
-Using jumper wires, I connected the white wire to the ground pin of the Raspberry Pi (Pin 6), the red wire to the +5v pin (Pin 4) and the green wire to BCM 18 (or Pin 12), using the reference on [pinout.xyz](https://pinout.xyz)
+Using jumper wires, I connected the white wire to the ground pin of the Raspberry Pi (Pin 6), the red wire to the +5v pin (Pin 4) and the green wire to BCM 18 (or Pin 12), using the reference on [pinout.xyz](https://pinout.xyz). This might be a terrible idea - please don't hold me responsible for any permanent damage to the hardware!
 
 ### Configuration
 

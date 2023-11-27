@@ -8,7 +8,7 @@ setup(
         'adafruit-circuitpython-neopixel==6.3.8',
         'Flask==2.2.3',
         'noise==1.2.2',
-        'python-dotenv==1.0.0',
+        'python-dotenv==0.21.1',
         'requests==2.28.2',
     ],
 )
